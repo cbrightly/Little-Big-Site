@@ -1,17 +1,20 @@
 <?php
-	require_once("connection.php");
+	require_once('../../resources/sqliConnect.php');
 	session_start();
-	if ($_POST['submit']){
+	if (isset($_POST['submit'])){
 		sleep(1);	// mitigate brute-force attack
 		$email = strtolower($_POST['email']);
-		$email = mysql_real_escape_string($email);
+		$email = mysqli_real_escape_string($mysqli, $email);
 		$password = sha1($_POST['password']);
-		if (dbQuery("select * from users where password='$password' AND email='$email'")) {
+		if (mysqli_fetch_array(sqlQuery("select * from users where password='$password' AND email='$email'"))) {
 			$_SESSION['sessionuser'] = $email;
-			header("location: authenticated.php"); // Redirecting To Other Page
+			header("location: home.php"); // Redirecting To Other Page
 		} else {
 			$notify = "<font color='red'>Invalid email or password. Try again.</font>";
 		}
+	} else {
+		$_POST['email'] = null;
+		$notify = null;
 	}
 ?>
 

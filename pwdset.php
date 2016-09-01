@@ -1,16 +1,16 @@
 <?php
-	require_once("connection.php");
+	require_once('../../resources/sqliConnect.php');
 	if (!$_GET["email"] || !$_GET["userkey"]) {	// if they are missing any info...
 		header("Location: index.php"); 				// they shouldn't be here, show them the homepage
 	} else {
-		$DBemail = mysql_real_escape_string(urldecode($_GET["email"]));
-		$DBuserkey = mysql_real_escape_string($_GET["userkey"]);
-		if (!dbQuery("select * from users where email='$DBemail' and userkey='$DBuserkey'")) {	// test that the reset key matches current one for that email.
+		$DBemail = mysqli_real_escape_string($mysqli, urldecode($_GET["email"]));
+		$DBuserkey = mysqli_real_escape_string($mysqli, $_GET["userkey"]);
+		if (!mysqli_fetch_array(sqlQuery("select * from users where email='$DBemail' and userkey='$DBuserkey'"))) {	// test that the reset key matches current one for that email.
 			print "<font color='red'>url expired or invalid</font>";
 			die;
 		}
 	}
-	if ($_POST['submit']){
+	if (isset($_POST['submit'])){
 		do {
 			if ($_POST['password1'] != $_POST['password2']) {
 				$notify = "<font color='red'>passwords do not match</font>";
@@ -26,9 +26,11 @@
 			}
 			$DBpassword = sha1($_POST['password1']);	// no need to escape, we dictate the format of the password
 			$DBuserkey = mt_rand(1000000000, 9999999999); // used to make current url expire
-			dbQuery("update users set password='$DBpassword', userkey='$DBuserkey' where email='$DBemail'", false);
+			sqlQuery("update users set password='$DBpassword', userkey='$DBuserkey' where email='$DBemail'", false);
 			header('Location: login.php'); // success, now go to login page
 		} while (0);
+	} else {
+		$notify = null;
 	}
 ?>
 

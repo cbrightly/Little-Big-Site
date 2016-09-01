@@ -1,13 +1,13 @@
 <?php
-	require_once("connection.php");
-	if ($_POST['submit']){
+	require_once('../../resources/sqliConnect.php');
+	if (isset($_POST['submit'])){
 		do {
-			if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+			if (!filter_var($_POST['email'], FILTER_VALIDATE_EMAIL)) {
 				$notify = "<font color='red'>email address not valid</font>";
 				break;
 			}
-			$DBemail = mysql_real_escape_string($_POST['email']);
-			if (!dbQuery("select * from users where email='$DBemail'")) {
+			$DBemail = mysqli_real_escape_string($mysqli, $_POST['email']);
+			if (!mysqli_fetch_array(sqlQuery("select * from users where email='$DBemail'"))) {
 				$notify = "<font color='red'>email not registered</font>";
 				break;
 			}
@@ -26,9 +26,13 @@
 							</body>
 						</html>";
 			mail($_POST['email'], $emlSubject, $emlMessage, $emlHeaders);
-			dbQuery("update users set userkey='$userkey' where email='$DBemail'", false); // invalidating the url
+			sqlQuery("update users set userkey='$userkey' where email='$DBemail'", false); // invalidating the url
 			$notify = "<font color='green'>password reset link sent to " . $_POST['email'] . "</font>";
 		} while (0);
+	} else {
+		$_POST['email'] = null;
+		$notify = null;
+		
 	}
 ?>
 

@@ -1,8 +1,8 @@
 <?php
 	require('session.php');	// required on all pages in which you should be logged in to visit
-	require_once("connection.php");
-	$user = dbQuery("select * from users where email='$sessionuser'");
-	if ($_POST['submit']){
+	require_once('../../resources/sqliConnect.php');
+	$user = mysqli_fetch_array(sqlQuery("select * from users where email='$sessionuser'"));
+	if (isset($_POST['submit'])){
 		do {
 			if (!filter_var($_POST['email'], FILTER_VALIDATE_EMAIL)) {
 				$notify = "<font color='red'>email address not valid</font>";
@@ -34,13 +34,13 @@
 				$DBpassword = sha1($_POST['password1']);	// no need to escape, we dictate the format of the password
 			}
 			$DBemail = $user['email'];	// not need to escape, we pulled this from our database
-			$DBfirstname = mysql_real_escape_string(ucfirst($_POST['firstname']));
-			$DBlastname = mysql_real_escape_string(ucfirst($_POST['lastname']));
-			dbQuery("update users set password='$DBpassword', firstname='$DBfirstname', lastname='$DBlastname' where email='$DBemail'", false);
+			$DBfirstname = mysqli_real_escape_string($mysqli, ucfirst($_POST['firstname']));
+			$DBlastname = mysqli_real_escape_string($mysqli, ucfirst($_POST['lastname']));
+			sqlQuery("update users set password='$DBpassword', firstname='$DBfirstname', lastname='$DBlastname' where email='$DBemail'", false);
 			$notify = "<font color='green'>profile updated</font>";
 			if (strtolower($_POST['email']) != $user["email"]) { // user has requested to change email. we need to send verification
 				$userkey = mt_rand(1000000000, 9999999999); // used to verify user is who they say
-				$HMAC = hash_hmac(sha256, $_POST['email'] , DBPASS); // used to ensure that the url-encoded new address we are emailing has not been manipulated by the user
+				$HMAC = hash_hmac('sha256', $_POST['email'] , 'SALT!~$'); // used to ensure that the url-encoded new address we are emailing has not been manipulated by the user
 				$domain = $_SERVER['HTTP_HOST'];
 				$subdir = dirname($_SERVER['REQUEST_URI']);
 				$subject = $domain . " email change";
@@ -55,12 +55,14 @@
 								</body>
 							</html>";
 				mail($_POST['email'], $subject, $message, $headers);
-				dbQuery("update users set userkey='$userkey' where email='$DBemail'", false);
+				sqlQuery("update users set userkey='$userkey' where email='$DBemail'", false);
 				$notify = "<font color='green'>change of email verification sent to " . $_POST['email'] . "</font>";
 			}
 		} while (0);
+	} else {
+		$notify = null;
 	}
-	$user = dbQuery("select * from users where email='$sessionuser'"); // query again, in case the info was updated
+	$user = mysqli_fetch_array(sqlQuery("select * from users where email='$sessionuser'")); // query again, in case the info was updated
 ?>
 
 <html>
@@ -69,11 +71,12 @@
 	</head>
 	<body>
 		<form action="" method="post">
+			<div><a href="home.php">back home</a></div>
 			<div><b>name</b></div>
-			<span><input name="firstname" value="<?php print $user[firstname] ?>" type="text"></span>
-			<span><input name="lastname" value="<?php print $user[lastname] ?>" type="text"></span>
+			<span><input name="firstname" value="<?php print $user['firstname'] ?>" type="text"></span>
+			<span><input name="lastname" value="<?php print $user['lastname'] ?>" type="text"></span>
 			<div><b>email address</b></div>
-			<div><input name="email" value="<?php print $user[email] ?>" type="text"></div>
+			<div><input name="email" value="<?php print $user['email'] ?>" type="text"></div>
 			<div><b>password</b></div>
 			<span><input name="password1" value="xxxxxxxx" type="password"></span>
 			<span><input name="password2" value="xxxxxxxx" type="password"></span>
